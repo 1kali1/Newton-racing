@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Newton Racing · Winner Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0f4fa;--bg2:#fff;--bg3:#f7f9fd;--border:#e2e8f4;--border2:#c9d3e8;
+  --txt:#0f172a;--muted:#64748b;--dim:#94a3b8;
+  --navy:#0f172a;--navyL:#1e293b;
+  --gold:#d97706;--gold2:#f59e0b;
+  --green:#059669;--greenbg:#ecfdf5;--greenbrd:#a7f3d0;
+  --red:#dc2626;--redbg:#fef2f2;--redbrd:#fecaca;
+  --blue:#2563eb;--bluebg:#eff6ff;--bluebrd:#bfdbfe;
+  --purple:#7c3aed;--purplebg:#f5f3ff;--purplebrd:#ddd6fe;
+  --amber:#d97706;--amberbg:#fffbeb;--amberbrd:#fde68a;
+  --r:10px;
+  --sh:0 1px 4px rgba(0,0,0,.07);
+  --sh2:0 4px 20px rgba(0,0,0,.1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace}
+.topbar{background:var(--navy);color:#fff;padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.tlogo{display:flex;align-items:baseline;gap:8px}
+.tlogo h1{font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:-.3px}
+.tver{background:var(--gold2);color:var(--navy);font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:3px}
+.tcreds{display:flex;gap:6px;align-items:center}
+.tinp{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:6px;color:#fff;padding:5px 9px;font-family:'JetBrains Mono',monospace;font-size:.7rem;width:130px;outline:none;transition:border .15s}
+.tinp::placeholder{color:rgba(255,255,255,.35)}
+.tinp:focus{border-color:var(--gold2)}
+.tbtn{background:var(--gold2);color:var(--navy);border:none;border-radius:6px;padding:7px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.tbtn:hover{background:#fbbf24}
+.tbtn:disabled{opacity:.45;cursor:not-allowed}
+.tstat{display:flex;align-items:center;gap:6px;font-size:.72rem;color:rgba(255,255,255,.5);font-family:'JetBrains Mono',monospace}
+.tdot{width:7px;height:7px;border-radius:50%;background:#475569}
+.tdot.live{background:#34d399;box-shadow:0 0 7px rgba(52,211,153,.6);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabbar{background:var(--bg2);border-bottom:2px solid var(--border);display:flex;overflow-x:auto;padding:0 16px;position:sticky;top:54px;z-index:190}
+.tabbar::-webkit-scrollbar{display:none}
+.tabb{background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:13px 16px;font-family:'Outfit',sans-serif;font-weight:600;font-size:.8rem;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .15s}
+.tabb:hover{color:var(--txt)}
+.tabb.on{color:var(--navy);border-bottom-color:var(--navy);font-weight:700}
+.main{max-width:1200px;margin:0 auto;padding:16px}
+.statusbar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 16px;margin-bottom:14px;font-size:.78rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.statusbar.err{border-color:var(--redbrd);background:var(--redbg);color:var(--red)}
+.statusbar.ok{border-color:var(--greenbrd);background:var(--greenbg);color:var(--green)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;box-shadow:var(--sh)}
+.kpi-lbl{font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.kpi-val{font-size:1.5rem;font-weight:800;line-height:1;font-family:'JetBrains Mono',monospace}
+.kpi-val.gold{color:var(--gold)}
+.kpi-val.green{color:var(--green)}
+.kpi-val.red{color:var(--red)}
+.kpi-val.blue{color:var(--blue)}
+.kpi-val.sm{font-size:.85rem;line-height:1.3}
+.race-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden;box-shadow:var(--sh)}
+.race-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);gap:12px;cursor:pointer;user-select:none}
+.race-head:hover{background:#eef2f8}
+.race-title{font-weight:700;font-size:.9rem}
+.race-meta{font-size:.73rem;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.race-badges{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.race-body{display:none;overflow-x:auto}
+.race-body.open{display:block}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{background:var(--bg3);border-bottom:2px solid var(--border);padding:8px 10px;text-align:left;font-weight:700;color:var(--muted);font-size:.68rem;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.tr-top td{background:rgba(5,150,105,.03);border-left:3px solid var(--green)}
+.tr-val td{background:rgba(37,99,235,.03)}
+.horse-name{font-weight:700;font-size:.85rem}
+.horse-sub{font-size:.7rem;color:var(--muted);margin-top:1px}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:.65rem;font-weight:700;letter-spacing:.3px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.b-win{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbrd)}
+.b-val{background:var(--bluebg);color:var(--blue);border:1px solid var(--bluebrd)}
+.b-ew{background:var(--purplebg);color:var(--purple);border:1px solid var(--purplebrd)}
+.b-danger{background:var(--amberbg);color:var(--amber);border:1px solid var(--amberbrd)}
+.b-avoid{background:var(--redbg);color:var(--red);border:1px solid var(--redbrd)}
+.b-pass{background:var(--bg3);color:var(--dim);border:1px solid var(--border2)}
+.b-nap{background:var(--navy);color:var(--gold2);border:1px solid var(--navy)}
+.score-bar{display:flex;align-items:center;gap:6px}
+.score-track{width:70px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.score-fill{height:100%;border-radius:3px}
+.fill-green{background:var(--green)}
+.fill-blue{background:var(--blue)}
+.fill-amber{background:var(--gold2)}
+.fill-red{background:var(--red)}
+.signals{display:flex;gap:3px;flex-wrap:wrap}
+.sig{font-size:.62rem;padding:2px 5px;border-radius:3px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.sig-g{background:var(--greenbg);color:var(--green)}
+.sig-b{background:var(--bluebg);color:var(--blue)}
+.sig-a{background:var(--amberbg);color:var(--amber)}
+.sig-r{background:var(--redbg);color:var(--red)}
+.sig-x{background:var(--bg3);color:var(--dim)}
+.picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;margin-bottom:16px}
+.pick{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden;transition:box-shadow .15s}
+.pick:hover{box-shadow:var(--sh2)}
+.pick::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px}
+.pick.p-win::before{background:var(--green)}
+.pick.p-val::before{background:var(--blue)}
+.pick.p-ew::before{background:var(--purple)}
+.pick-label{font-size:.62rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.pick-horse{font-size:1.1rem;font-weight:800;letter-spacing:-.3px;margin-bottom:3px}
+.pick-race{font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:10px}
+.pick-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pick-odds{font-size:1.25rem;font-weight:800;font-family:'JetBrains Mono',monospace;color:var(--gold)}
+.pick-spotlight{font-size:.74rem;color:var(--muted);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.setting-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px}
+.setting-card h3{font-size:.85rem;font-weight:700;margin-bottom:12px;color:var(--navy)}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field label{font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.inp{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--txt);padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:.82rem;width:100%;outline:none;transition:border .15s}
+.inp:focus{border-color:var(--blue)}
+.btn{cursor:pointer;border:none;border-radius:7px;padding:9px 16px;font-family:'Outfit',sans-serif;font-weight:700;font-size:.82rem;transition:all .15s}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navyL)}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty h3{font-size:1rem;font-weight:700;color:var(--dim);margin-bottom:6px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px}
+.stat-title{font-size:.68rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.stat-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem}
+.stat-row:last-child{border-bottom:none}
+.stat-row b{font-family:'JetBrains Mono',monospace}
+@media(max-width:768px){
+  .topbar{height:auto;flex-wrap:wrap;padding:10px 14px;gap:8px}
+  .tcreds{flex-wrap:wrap;width:100%}
+  .tinp{width:45%;flex:1}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .picks-grid{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .tstat{display:none}
+  .main{padding:10px}
+}
+@media(max-width:500px){
+  th:nth-child(n+6),td:nth-child(n+6){display:none}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="tlogo"><h1>Newton Racing</h1><span class="tver">v9 WINNER ENGINE</span></div>
+  <div class="tcreds">
+    <input class="tinp" id="apiUser" type="text" placeholder="username" autocomplete="username"/>
+    <input class="tinp" id="apiPass" type="password" placeholder="password" autocomplete="current-password"/>
+    <button class="tbtn" id="fetchBtn" onclick="fetchAll()">Fetch Today</button>
+  </div>
+  <div class="tstat"><div class="tdot" id="dot"></div><span id="dotTxt">Ready</span></div>
+</div>
+
+<div class="tabbar">
+  <button class="tabb on" data-tab="races" onclick="sw('races')">🏇 Races</button>
+  <button class="tabb" data-tab="picks" onclick="sw('picks')">⭐ Top Picks</button>
+  <button class="tabb" data-tab="value" onclick="sw('value')">💰 Value Bets</button>
+  <button class="tabb" data-tab="ew" onclick="sw('ew')">📊 Each-Way</button>
+  <button class="tabb" data-tab="stats" onclick="sw('stats')">📈 Stats</button>
+  <button class="tabb" data-tab="settings" onclick="sw('settings')">⚙️ Settings</button>
+</div>
+
+<div class="main">
+  <div id="sb" class="statusbar" style="display:none"></div>
+  <div id="content"></div>
+</div>
+
+<script>
+const ST={races:[],scored:[],tab:'races'};
+const $=id=>document.getElementById(id);
+const sf=(n,d=1)=>isFinite(+n)?(+n).toFixed(d):'—';
+const pc=n=>isFinite(+n)?((+n)*100).toFixed(1)+'%':'—';
+
+function auth(){
+  const u=$('apiUser').value.trim(),p=$('apiPass').value.trim();
+  return 'Basic '+btoa(unescape(encodeURIComponent(u+':'+p)));
+}
+
+async function api(path,params={}){
+  const qs=new URLSearchParams();
+  Object.entries(params).forEach(([k,v])=>{if(v!=null&&v!=='')qs.append(k,v)});
+  const u=$('apiUser').value.trim(),p=$('apiPass').value.trim();
+  const creds='Basic '+btoa(u+':'+p);
+  const apiUrl='https://api.theracingapi.com/v1'+path+(qs.toString()?'?'+qs:'');
+  const hdrs={'Authorization':creds,'Accept':'application/json'};
+
+  function isAuthErr(e){return e.message.startsWith('401')||e.message.startsWith('403')||e.message==='Auth failed';}
+  function checkAuthJson(d){if(d&&d.detail&&d.detail.toLowerCase().includes('auth'))throw new Error('Auth failed');}
+
+  // 1. Direct fetch — works on GitHub Pages (HTTPS same-origin CORS allowed)
+  try{
+    const r=await fetch(apiUrl,{headers:hdrs});
+    if(r.status===401)throw new Error('401 — Wrong username or password');
+    if(r.status===403)throw new Error('403 — Plan access denied');
+    if(r.ok){const d=await r.json();checkAuthJson(d);return d;}
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  // 2. corsproxy.io — primary proxy
+  try{
+    const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(apiUrl),{headers:hdrs});
+    if(r.status===401||r.status===403)throw new Error('Auth failed');
+    if(r.ok){
+      const d=await r.json();
+      checkAuthJson(d);
+      if(d.contents)return JSON.parse(d.contents);
+      return d;
+    }
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  // 3. thingproxy.freeboard.io
+  try{
+    const r=await fetch('https://thingproxy.freeboard.io/fetch/'+apiUrl,{headers:hdrs});
+    if(r.status===401||r.status===403)throw new Error('Auth failed');
+    if(r.ok){const d=await r.json();checkAuthJson(d);return d;}
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  // 4. allorigins
+  try{
+    const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(apiUrl),{headers:hdrs});
+    if(r.ok){const d=await r.json();if(d.contents){const p2=JSON.parse(d.contents);checkAuthJson(p2);return p2;}}
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  // 5. codetabs
+  try{
+    const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(apiUrl),{headers:hdrs});
+    if(r.ok){const t=await r.text();const p3=JSON.parse(t);checkAuthJson(p3);return p3;}
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  // 6. crossorigin.me
+  try{
+    const r=await fetch('https://crossorigin.me/'+apiUrl,{headers:hdrs});
+    if(r.ok){const d=await r.json();checkAuthJson(d);return d;}
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  // 7. htmldriven (no-auth proxy — encodes creds into URL for Basic auth passthrough)
+  try{
+    const authedUrl=apiUrl.replace('https://','https://'+u+':'+p+'@');
+    const r=await fetch('https://cors-anywhere.herokuapp.com/'+apiUrl,{headers:{...hdrs,'X-Requested-With':'XMLHttpRequest'}});
+    if(r.ok){const d=await r.json();checkAuthJson(d);return d;}
+  }catch(e){if(isAuthErr(e))throw e;}
+
+  throw new Error('All proxies failed. Best fix: upload to GitHub Pages (free HTTPS host — direct fetch works instantly).');
+}
+
+async function fetchAll(){
+  const u=$('apiUser').value.trim(),p=$('apiPass').value.trim();
+  if(!u||!p){stat('Enter username and password','err');return}
+  $('fetchBtn').disabled=true;$('fetchBtn').textContent='Loading…';
+  dot(false,'Fetching…');stat('Fetching racecards…');
+  ST.races=[];ST.scored=[];
+  try{
+    const region=$('setRegion')?$('setRegion').value:'gb,ire';
+    let data;
+    try{
+      data=await api('/racecards/standard',{region_codes:region});
+    }catch(e){
+      if(e.message.includes('403')){
+        stat('Standard endpoint blocked — trying basic…');
+        data=await api('/racecards/basic',{day:'today',region_codes:region});
+      } else throw e;
+    }
+    if(Array.isArray(data)) ST.races=data;
+    else if(Array.isArray(data.racecards)) ST.races=data.racecards;
+    else if(Array.isArray(data.races)) ST.races=data.races;
+    else{ const arr=Object.values(data).find(v=>Array.isArray(v)); ST.races=arr||[]; }
+    
+    if(!ST.races.length){stat('No races returned. Response: '+JSON.stringify(data).slice(0,100),'err');return;}
+    
+    stat('Scoring '+ST.races.length+' races…');
+    ST.scored=[];
+    for(const race of ST.races){
+      for(const runner of race.runners||[]){
+        const s=scoreRunner(race,runner);
+        if(s)ST.scored.push(s);
+      }
+    }
+    normalise();
+    localStorage.setItem('nr9u',u);localStorage.setItem('nr9p',p);
+    dot(true,ST.races.length+' races · '+ST.scored.length+' runners');
+    stat('Done — '+ST.races.length+' races, '+ST.scored.length+' runners scored','ok');
+    renderTab();
+  }catch(e){
+    stat('Error: '+e.message,'err');dot(false,'Error');
+  }finally{
+    $('fetchBtn').disabled=false;$('fetchBtn').textContent='Fetch Today';
+  }
+}
+
+function getOdds(runner){
+  const v=(runner.odds||[]).map(o=>parseFloat(o.decimal||0)).filter(v=>v>1);
+  if(!v.length)return{best:null,worst:null,count:0,spread:null};
+  const b=Math.min(...v),w=Math.max(...v);
+  return{best:b,worst:w,count:v.length,spread:(w-b)/b*100};
+}
+function fmScore(form){
+  const s=String(form||'').toUpperCase();
+  const d=s.replace(/[^0-9]/g,'').split('').map(Number).slice(-5);
+  if(!d.length)return{score:-5,label:'No form',cls:'r'};
+  let sc=0;
+  d.forEach((v,i)=>{const w=0.4+(i/d.length)*0.6;if(v===1)sc+=16*w;else if(v===2)sc+=10*w;else if(v===3)sc+=7*w;else if(v<=5)sc+=3*w;else sc-=4*w});
+  sc-=(s.match(/[PUFR]/g)||[]).length*6;
+  if(d[d.length-1]===1)sc+=8;
+  sc=Math.round(Math.max(-25,Math.min(40,sc)));
+  if(sc>=20)return{score:sc,label:'Excellent form',cls:'g'};
+  if(sc>=10)return{score:sc,label:'Good form',cls:'g'};
+  if(sc>=3)return{score:sc,label:'Decent form',cls:'a'};
+  if(sc>=-5)return{score:sc,label:'Mixed form',cls:'x'};
+  return{score:sc,label:'Weak form',cls:'r'};
+}
+function dyScore(lr,rtf){
+  const d=parseInt(lr||0),r=parseInt(rtf||0);
+  if(!d||d<0)return{score:-5,label:'Unknown',cls:'x'};
+  if(d<=3)return{score:-8,label:'Too quick',cls:'r'};
+  if(d<=14)return{score:12,label:d+'d sharp',cls:'g'};
+  if(d<=30)return{score:9,label:d+'d fit',cls:'g'};
+  if(d<=45)return{score:5,label:d+'d recent',cls:'a'};
+  if(d<=60)return{score:1,label:d+'d break',cls:'x'};
+  const rb=r>=70?8:r>=55?4:r<=25?-5:0;
+  if(d<=90)return{score:-6+rb,label:r>=60?d+'d RTF'+r+'%':d+'d layoff',cls:r>=60?'a':'r'};
+  return{score:-14+rb,label:d+'d absence',cls:'r'};
+}
+function mktScore(sp,ct){
+  if(sp===null||ct<5)return{score:0,label:null,cls:'x'};
+  if(sp<=8)return{score:12,label:'Strong steam',cls:'g'};
+  if(sp<=16)return{score:7,label:'Mkt backed',cls:'g'};
+  if(sp<=28)return{score:3,label:'Solid mkt',cls:'a'};
+  if(sp<=50)return{score:-2,label:'Mkt split',cls:'x'};
+  return{score:-7,label:'Drifting',cls:'r'};
+}
+function cdScore(flags){
+  const s=(Array.isArray(flags)?flags.join(' '):String(flags||'')).toUpperCase();
+  if(s.includes('CD'))return{score:12,label:'C&D ✓',cls:'g'};
+  let sc=0,lb='';
+  if(/C/.test(s)){sc+=6;lb='Course ✓';}
+  if(/D/.test(s)){sc+=5;lb+=(lb?' ':'')+'Dist ✓';}
+  if(s.includes('BF'))sc-=3;
+  return{score:sc,label:lb||null,cls:sc>=11?'g':sc>=5?'a':'x'};
+}
+function rprScore(rpr,ofr){
+  const r=parseInt(rpr||0),o=parseInt(ofr||0);
+  if(!r||!o)return{score:0,label:null};
+  const g=r-o;
+  if(g>=15)return{score:10,label:'RPR+'+g,cls:'g'};
+  if(g>=8)return{score:6,label:'RPR+'+g,cls:'g'};
+  if(g>=3)return{score:3,label:null};
+  if(g<=-5)return{score:-4,label:'OR>RPR',cls:'r'};
+  return{score:0,label:null};
+}
+function t14Score(t14){
+  if(!t14)return{score:0,label:null};
+  const r=parseInt(t14.runs||0),w=parseInt(t14.wins||0);
+  if(r<3)return{score:0,label:null};
+  const wr=w/r;
+  if(wr>=0.40)return{score:8,label:'T14:'+Math.round(wr*100)+'%',cls:'g'};
+  if(wr>=0.28)return{score:5,label:'T14:'+Math.round(wr*100)+'%',cls:'a'};
+  if(wr>=0.15)return{score:2,label:null};
+  return{score:0,label:null};
+}
+function drawScore(course,draw,field,dist){
+  const d=parseInt(draw||0);if(!d)return{score:0,label:null};
+  const c=(course||'').toLowerCase(),n=parseInt(field||8),dn=parseFloat(String(dist||'').replace(/[^0-9.]/g,''))||0;
+  const low=d<=Math.ceil(n/3),high=d>Math.floor(n*2/3);
+  if(c.includes('chester')&&dn<=7)return low?{score:8,label:'Draw ✓',cls:'g'}:high?{score:-8,label:'Draw ⚠',cls:'r'}:{score:0,label:null};
+  if(c.includes('thirsk')&&dn>=5&&dn<=7)return high?{score:5,label:'Draw ✓',cls:'g'}:low?{score:-4,label:'Draw ⚠',cls:'r'}:{score:0,label:null};
+  if(c.includes('catterick')&&dn<=7)return low?{score:5,label:'Draw ✓',cls:'g'}:high?{score:-4,label:'Draw ⚠',cls:'r'}:{score:0,label:null};
+  if(c.includes('goodwood')&&dn<=7)return low?{score:4,label:'Draw ✓',cls:'g'}:high?{score:-3,label:'Draw ⚠',cls:'r'}:{score:0,label:null};
+  if(c.includes('hamilton')&&dn<=6)return low?{score:4,label:'Draw ✓',cls:'g'}:{score:0,label:null};
+  if(c.includes('newmarket')&&dn<=7)return high?{score:3,label:'High draw',cls:'a'}:{score:0,label:null};
+  return{score:0,label:null};
+}
+function scoreRunner(race,runner){
+  const rn=(race.race_name||'').toLowerCase();
+  if(/maiden|novice/.test(rn)&&!/handicap/.test(rn))return null;
+  const o=getOdds(runner);
+  const minO=parseFloat($('setMinOdds')?$('setMinOdds').value:2.5);
+  const maxO=parseFloat($('setMaxOdds')?$('setMaxOdds').value:16);
+  const maxD=parseInt($('setMaxDays')?$('setMaxDays').value:90);
+  if(!o.best||o.best<minO||o.best>maxO)return null;
+  const doff=parseInt(runner.last_run||0);
+  if(doff>maxD)return null;
+  const fm=fmScore(runner.form);
+  const dy=dyScore(runner.last_run,runner.trainer_rtf);
+  const mk=mktScore(o.spread,o.count);
+  const cd=cdScore(runner.past_results_flags);
+  const rp=rprScore(runner.rpr,runner.ofr);
+  const t14=t14Score(runner.trainer_14_days);
+  const dr=drawScore(race.course,runner.draw,race.field_size,race.distance_f||race.distance);
+  const age=parseInt(runner.age||0);
+  const ageSc=age===3?3:age>=4&&age<=6?2:age>=8?-4:age===7?-2:0;
+  const hcap=/handicap/.test(rn)?4:0;
+  const raw=20+mk.score*3+fm.score+dy.score+cd.score+rp.score+t14.score+dr.score+ageSc+hcap;
+  const sigs=[mk,fm,cd,rp,t14,dr,dy].filter(s=>s.label).map(s=>({label:s.label,cls:s.cls||'x'}));
+  return{
+    horse:runner.horse,trainer:runner.trainer||'',jockey:runner.jockey||'',
+    form:runner.form||'',age:runner.age,draw:runner.draw,lbs:runner.lbs,
+    or:runner.ofr,rpr:runner.rpr,ts:runner.ts,lastRun:runner.last_run,
+    rtf:runner.trainer_rtf,headgear:runner.headgear,flags:runner.past_results_flags||[],
+    spotlight:(runner.spotlight||runner.comment||'').slice(0,220),
+    raceId:race.race_id,course:race.course,offTime:race.off_time,
+    raceName:race.race_name,dist:race.distance,distF:race.distance_f,
+    going:race.going,raceClass:race.race_class,fieldSize:race.field_size,
+    prize:race.prize,type:race.type,
+    bestOdds:o.best,worstOdds:o.worst,spread:o.spread,bookies:o.count,
+    raw,sigs,mk:mk.score,
+    modelProb:null,fairOdds:null,marketProb:o.best?1/o.best:null,
+    edge:null,edgePct:null,decision:null
+  };
+}
+function normalise(){
+  const byRace=new Map();
+  for(const r of ST.scored){if(!byRace.has(r.raceId))byRace.set(r.raceId,[]);byRace.get(r.raceId).push(r)}
+  const T=parseFloat($('setTemp')?$('setTemp').value:15);
+  for(const runners of byRace.values()){
+    const mx=Math.max(...runners.map(r=>r.raw));
+    let den=0;runners.forEach(r=>{r._e=Math.exp((r.raw-mx)/T);den+=r._e});
+    runners.forEach(r=>{
+      r.modelProb=r._e/den;r.fairOdds=1/r.modelProb;
+      r.edge=r.marketProb?r.modelProb-r.marketProb:null;
+      r.edgePct=r.edge?r.edge*100:null;
+      r.decision=decide(r);
+    });
+  }
+}
+function decide(r){
+  const me=parseFloat($('setMinEdge')?$('setMinEdge').value:5)/100;
+  if(r.edge===null)return'NO ODDS';
+  if(r.edge>=0.18)return'STRONG VALUE';
+  if(r.edge>=0.10)return'VALUE';
+  if(r.edge>=me)return'SMALL EDGE';
+  if(r.bestOdds<=2.8&&r.edge<0)return'WEAK FAV';
+  if(r.edge<-0.12)return'AVOID';
+  return'PASS';
+}
+function badge(d){
+  const m={'STRONG VALUE':'b-win','VALUE':'b-val','SMALL EDGE':'b-ew','WEAK FAV':'b-danger','AVOID':'b-avoid','PASS':'b-pass','NO ODDS':'b-pass'};
+  return`<span class="badge ${m[d]||'b-pass'}">${d}</span>`;
+}
+function bar(score,max=120){
+  const p=Math.max(0,Math.min(100,score/max*100));
+  const c=p>=65?'fill-green':p>=45?'fill-blue':p>=30?'fill-amber':'fill-red';
+  return`<div class="score-bar"><div class="score-track"><div class="score-fill ${c}" style="width:${p}%"></div></div><span class="mono" style="font-size:.7rem">${score}</span></div>`;
+}
+function sigs(arr){return`<div class="signals">${arr.map(s=>`<span class="sig sig-${s.cls}">${s.label}</span>`).join('')}</div>`}
+
+function topPicks(){
+  const byRace=new Map();
+  for(const r of ST.scored){
+    const k=r.raceId,str=r.mk*3+r.raw+(r.edgePct||0)*0.5+(r.modelProb||0)*100;
+    if(!byRace.has(k)||str>byRace.get(k).str)byRace.set(k,{...r,str});
+  }
+  return[...byRace.values()].sort((a,b)=>b.str-a.str);
+}
+function valueBets(){
+  const me=parseFloat($('setMinEdge')?$('setMinEdge').value:5)/100;
+  return ST.scored.filter(r=>r.edge!==null&&r.edge>=me).sort((a,b)=>(b.edgePct||0)-(a.edgePct||0)).slice(0,25);
+}
+function ewBets(){
+  return ST.scored.filter(r=>r.bestOdds>=5&&r.edge!==null&&r.edge>=0).sort((a,b)=>(b.edgePct||0)-(a.edgePct||0)).slice(0,20);
+}
+
+function sw(tab){
+  ST.tab=tab;
+  document.querySelectorAll('.tabb').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  renderTab();
+}
+function renderTab(){
+  const c=$('content');
+  if(!ST.races.length&&ST.tab!=='settings'){
+    c.innerHTML=`<div class="empty"><h3>No data loaded</h3><p>Enter API credentials and hit <b>Fetch Today</b></p></div>`;
+    return;
+  }
+  if(ST.tab==='races')rRaces(c);
+  else if(ST.tab==='picks')rPicks(c);
+  else if(ST.tab==='value')rValue(c);
+  else if(ST.tab==='ew')rEW(c);
+  else if(ST.tab==='stats')rStats(c);
+  else if(ST.tab==='settings')rSettings(c);
+}
+
+function kpis(){
+  const vb=valueBets(),picks=topPicks(),nap=picks[0];
+  const avgE=vb.length?vb.reduce((s,r)=>s+(r.edgePct||0),0)/vb.length:0;
+  return`<div class="kpis">
+    <div class="kpi"><div class="kpi-lbl">Races</div><div class="kpi-val">${ST.races.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Runners</div><div class="kpi-val">${ST.scored.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Value Bets</div><div class="kpi-val blue">${vb.length}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Avg Edge</div><div class="kpi-val ${avgE>=5?'green':'red'}">${sf(avgE,1)}%</div></div>
+    <div class="kpi"><div class="kpi-lbl">NAP</div><div class="kpi-val gold sm">${nap?nap.horse:'—'}</div></div>
+  </div>`;
+}
+
+function rRaces(c){
+  const byRace=new Map();
+  for(const r of ST.scored){if(!byRace.has(r.raceId))byRace.set(r.raceId,[]);byRace.get(r.raceId).push(r)}
+  for(const rr of byRace.values())rr.sort((a,b)=>(b.modelProb||0)-(a.modelProb||0));
+  let html=kpis();
+  for(const race of ST.races){
+    const runners=byRace.get(race.race_id)||[];
+    if(!runners.length)continue;
+    const top=runners[0];
+    html+=`<div class="race-card">
+      <div class="race-head" onclick="tog('rb${race.race_id}')">
+        <div>
+          <div class="race-title">${race.off_time} · ${race.course} · ${race.race_name||''}</div>
+          <div class="race-meta">${race.distance||''} · ${race.going||''} · ${race.race_class||''} · ${race.field_size||''} runners · ${race.prize||''}</div>
+        </div>
+        <div class="race-badges">
+          <span class="badge b-nap">TOP: ${top.horse}</span>
+          ${top.edge!==null?`<span class="badge ${top.edge>=0.05?'b-val':'b-pass'}">Edge ${sf(top.edgePct,1)}%</span>`:''}
+          <span style="color:var(--dim)">▾</span>
+        </div>
+      </div>
+      <div class="race-body" id="rb${race.race_id}">
+        <table><thead><tr>
+          <th>Horse</th><th>Odds</th><th>Score</th><th>Model%</th><th>Fair</th><th>Edge</th><th>Decision</th><th>Signals</th>
+        </tr></thead><tbody>
+        ${runners.map((r,i)=>`<tr class="${i===0?'tr-top':r.decision==='STRONG VALUE'||r.decision==='VALUE'?'tr-val':''}">
+          <td>
+            <div class="horse-name">${r.horse}${r.headgear?` <span style="color:var(--gold)">[${r.headgear}]</span>`:''}</div>
+            <div class="horse-sub">${r.trainer} · ${r.jockey}</div>
+            <div class="horse-sub">Form:${r.form||'—'} OR:${r.or||'—'} RPR:${r.rpr||'—'} Age:${r.age||'—'} Draw:${r.draw||'—'}</div>
+          </td>
+          <td class="mono">${sf(r.bestOdds,2)}</td>
+          <td>${bar(r.raw)}</td>
+          <td class="mono">${pc(r.modelProb)}</td>
+          <td class="mono">${sf(r.fairOdds,2)}</td>
+          <td class="mono" style="color:${(r.edge||0)>=0?'var(--green)':'var(--red)'}">
+            ${r.edge!==null?((r.edge>=0?'+':'')+sf(r.edgePct,1)+'%'):'—'}
+          </td>
+          <td>${badge(r.decision)}</td>
+          <td>${sigs(r.sigs)}</td>
+        </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
+  }
+  c.innerHTML=html;
+}
+
+function tog(id){const b=$(id);if(b)b.classList.toggle('open')}
+
+function rPicks(c){
+  const max=parseInt($('setMaxPicks')?$('setMaxPicks').value:8);
+  const picks=topPicks().slice(0,max);
+  if(!picks.length){c.innerHTML='<div class="empty"><h3>No picks found</h3></div>';return}
+  const nap=picks[0];
+  let html=kpis();
+  html+=`<div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid var(--amberbrd);border-radius:var(--r);padding:20px 24px;margin-bottom:16px">
+    <div style="font-size:.62rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;font-family:'JetBrains Mono',monospace">⭐ NAP OF THE DAY</div>
+    <div style="font-size:1.4rem;font-weight:900;letter-spacing:-.5px">${nap.horse}</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--muted);margin:4px 0 10px">${nap.offTime} · ${nap.course} · ${nap.dist} · ${nap.going} · ${nap.raceClass}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;margin-bottom:10px">
+      <span><b>Odds:</b> <span style="color:var(--gold);font-weight:800;font-family:'JetBrains Mono',monospace">${sf(nap.bestOdds,2)}</span></span>
+      <span><b>Model:</b> <span class="mono">${pc(nap.modelProb)}</span></span>
+      <span><b>Fair:</b> <span class="mono">${sf(nap.fairOdds,2)}</span></span>
+      <span><b>Edge:</b> <span style="color:${(nap.edge||0)>=0?'var(--green)':'var(--red)'};font-weight:700;font-family:'JetBrains Mono',monospace">${nap.edge!==null?((nap.edge>=0?'+':'')+sf(nap.edgePct,1)+'%'):'—'}</span></span>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px"><b>${nap.trainer}</b> · ${nap.jockey} · Form: ${nap.form} · OR:${nap.or||'—'} RPR:${nap.rpr||'—'}</div>
+    ${sigs(nap.sigs)}
+    ${nap.spotlight?`<div style="font-size:.77rem;color:var(--muted);margin-top:10px;line-height:1.6;border-left:3px solid var(--amberbrd);padding-left:10px">${nap.spotlight}</div>`:''}
+  </div>`;
+  html+=`<div class="picks-grid">`;
+  picks.forEach((p,i)=>{
+    const type=p.bestOdds>=5?'p-ew':(p.edge||0)>=0.05?'p-val':'p-win';
+    const labels=['NAP','NB','TREBLE','BANKER','PICK 5','PICK 6','PICK 7','PICK 8'];
+    html+=`<div class="pick ${type}">
+      <div class="pick-label">${labels[i]||'PICK '+(i+1)}</div>
+      <div class="pick-horse">${p.horse}</div>
+      <div class="pick-race">${p.offTime} · ${p.course}</div>
+      <div class="pick-row">
+        <div class="pick-odds">${sf(p.bestOdds,2)}</div>
+        ${badge(p.decision)}
+      </div>
+      <div style="font-size:.73rem;color:var(--muted);margin-bottom:6px">${p.dist} · ${p.going} · ${p.raceClass}</div>
+      <div style="font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">Model: ${pc(p.modelProb)} · Fair: ${sf(p.fairOdds,2)} · Edge: ${p.edge!==null?((p.edge>=0?'+':'')+sf(p.edgePct,1)+'%'):'—'}</div>
+      ${sigs(p.sigs)}
+      <div style="font-size:.7rem;color:var(--dim);margin-top:6px">${p.trainer} · ${p.jockey}</div>
+      ${p.spotlight?`<div class="pick-spotlight">${p.spotlight}</div>`:''}
+    </div>`;
+  });
+  html+=`</div>`;
+  c.innerHTML=html;
+}
+
+function rValue(c){
+  const vb=valueBets();
+  if(!vb.length){c.innerHTML=`<div class="empty"><h3>No value bets found</h3><p>Lower Min Edge % in Settings or fetch fresh data</p></div>`;return}
+  let html=`<div class="race-card"><table>
+    <thead><tr><th>Horse</th><th>Time · Course</th><th>Odds</th><th>Model%</th><th>Fair</th><th>Edge</th><th>Spread</th><th>Decision</th><th>Signals</th></tr></thead><tbody>`;
+  for(const r of vb){
+    html+=`<tr><td><div class="horse-name">${r.horse}</div><div class="horse-sub">${r.trainer} · ${r.jockey} · ${r.form||'—'}</div></td>
+      <td class="mono" style="font-size:.72rem">${r.offTime}<br>${r.course}</td>
+      <td class="mono">${sf(r.bestOdds,2)}</td><td class="mono">${pc(r.modelProb)}</td>
+      <td class="mono">${sf(r.fairOdds,2)}</td>
+      <td class="mono" style="color:var(--green);font-weight:700">+${sf(r.edgePct,1)}%</td>
+      <td class="mono" style="color:${(r.spread||100)<=20?'var(--green)':'var(--red)'}">${r.spread!==null?sf(r.spread,1)+'%':'—'}</td>
+      <td>${badge(r.decision)}</td><td>${sigs(r.sigs)}</td></tr>`;
+  }
+  html+=`</tbody></table></div>`;
+  c.innerHTML=html;
+}
+
+function rEW(c){
+  const ew=ewBets();
+  if(!ew.length){c.innerHTML=`<div class="empty"><h3>No each-way bets found</h3><p>EW bets require odds 5.0+ with positive edge</p></div>`;return}
+  let html=`<div style="background:var(--purplebg);border:1px solid var(--purplebrd);border-radius:var(--r);padding:12px 16px;margin-bottom:14px;font-size:.8rem;color:var(--purple)">
+    <b>Each-Way:</b> 5/1+ horses with positive model edge.
+  </div><div class="race-card"><table>
+    <thead><tr><th>Horse</th><th>Time · Course</th><th>Odds</th><th>EW Terms</th><th>Model%</th><th>Edge</th><th>Signals</th><th>Spotlight</th></tr></thead><tbody>`;
+  for(const r of ew){
+    const race=ST.races.find(rc=>rc.race_id===r.raceId);
+    const o0=(race?.runners?.find(ru=>ru.horse===r.horse)?.odds||[])[0];
+    const terms=o0?o0.ew_places+' places 1/'+o0.ew_denom:'—';
+    html+=`<tr><td><div class="horse-name">${r.horse}</div><div class="horse-sub">${r.trainer} · ${r.form||'—'}</div></td>
+      <td class="mono" style="font-size:.72rem">${r.offTime}<br>${r.course}</td>
+      <td class="mono" style="color:var(--purple);font-weight:700">${sf(r.bestOdds,2)}</td>
+      <td class="mono">${terms}</td><td class="mono">${pc(r.modelProb)}</td>
+      <td class="mono" style="color:var(--green)">+${sf(r.edgePct,1)}%</td>
+      <td>${sigs(r.sigs)}</td>
+      <td style="font-size:.72rem;color:var(--muted);max-width:180px">${r.spotlight}</td></tr>`;
+  }
+  html+=`</tbody></table></div>`;
+  c.innerHTML=html;
+}
+
+function rStats(c){
+  const byT=new Map(),byC=new Map();
+  for(const r of ST.scored){
+    const t=r.trainer||'?';
+    if(!byT.has(t))byT.set(t,{n:0,v:0});
+    byT.get(t).n++;if((r.edge||0)>0)byT.get(t).v++;
+    const cr=r.course||'?';
+    if(!byC.has(cr))byC.set(cr,{r:new Set(),n:0,v:0});
+    byC.get(cr).r.add(r.raceId);byC.get(cr).n++;if((r.edge||0)>0)byC.get(cr).v++;
+  }
+  const topT=[...byT.entries()].filter(([,v])=>v.n>=2).sort((a,b)=>b[1].v-a[1].v).slice(0,12);
+  const topC=[...byC.entries()].sort((a,b)=>b[1].v-a[1].v).slice(0,10);
+  let html=kpis();
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+    <div class="stat-card"><div class="stat-title">Trainers with value runners today</div>
+      ${topT.map(([t,v])=>`<div class="stat-row"><span>${t}</span><b>${v.v}/${v.n}</b></div>`).join('')}
+    </div>
+    <div class="stat-card"><div class="stat-title">Courses today</div>
+      ${topC.map(([cr,v])=>`<div class="stat-row"><span>${cr}</span><b>${v.r.size}r · ${v.v} value</b></div>`).join('')}
+    </div>
+  </div>`;
+  c.innerHTML=html;
+}
+
+function rSettings(c){
+  c.innerHTML=`<div class="settings-grid">
+    <div class="setting-card"><h3>API & Region</h3>
+      <div class="field"><label>Region</label>
+        <select class="inp" id="setRegion" onchange="saveSets()">
+          <option value="gb,ire">GB + IRE</option><option value="gb">GB Only</option><option value="ire">IRE Only</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" style="margin-top:4px" onclick="fetchAll()">Re-fetch</button>
+    </div>
+    <div class="setting-card"><h3>Odds Range</h3>
+      <div class="field"><label>Min Odds</label><input class="inp" id="setMinOdds" type="number" value="2.5" min="1.5" max="10" step="0.5" onchange="saveSets()"/></div>
+      <div class="field"><label>Max Odds</label><input class="inp" id="setMaxOdds" type="number" value="16" min="4" max="50" onchange="saveSets()"/></div>
+      <div class="field"><label>Max Days Off</label><input class="inp" id="setMaxDays" type="number" value="90" min="14" max="365" onchange="saveSets()"/></div>
+    </div>
+    <div class="setting-card"><h3>Model</h3>
+      <div class="field"><label>Softmax Temperature</label><input class="inp" id="setTemp" type="number" value="15" min="5" max="40" onchange="saveSets()"/></div>
+      <div class="field"><label>Min Edge %</label><input class="inp" id="setMinEdge" type="number" value="5" min="1" max="30" onchange="saveSets()"/></div>
+      <div class="field"><label>Max Picks</label><input class="inp" id="setMaxPicks" type="number" value="8" min="3" max="20" onchange="saveSets()"/></div>
+    </div>
+    <div class="setting-card"><h3>How it works</h3>
+      <p style="font-size:.8rem;color:var(--muted);line-height:1.8">
+        <b>Market spread</b> — 3× weighted. Tight bookie consensus = steaming horse.<br>
+        <b>Softmax</b> — Raw scores → win probabilities per race.<br>
+        <b>Fair odds</b> — 1 ÷ model probability.<br>
+        <b>Edge</b> — Model % vs market implied % = value signal.<br>
+        <b>STRONG VALUE</b> ≥18% · <b>VALUE</b> ≥10% · <b>SMALL EDGE</b> ≥5%
+      </p>
+    </div>
+  </div>`;
+  loadSets();
+}
+
+function saveSets(){
+  const keys=['setRegion','setMinOdds','setMaxOdds','setMaxDays','setTemp','setMinEdge','setMaxPicks'];
+  const s={};keys.forEach(k=>{if($(k))s[k]=$(k).value});
+  localStorage.setItem('nr9s',JSON.stringify(s));
+}
+function loadSets(){
+  const s=JSON.parse(localStorage.getItem('nr9s')||'{}');
+  Object.entries(s).forEach(([k,v])=>{if($(k))$(k).value=v});
+}
+function stat(msg,type=''){
+  const s=$('sb');s.style.display='block';s.textContent=msg;s.className='statusbar '+type;
+  if(type==='ok')setTimeout(()=>{s.style.display='none'},4000);
+}
+function dot(live,txt){$('dot').className='tdot'+(live?' live':'');$('dotTxt').textContent=txt||''}
+
+window.addEventListener('load',()=>{
+  const u=localStorage.getItem('nr9u'),p=localStorage.getItem('nr9p');
+  if(u)$('apiUser').value=u;if(p)$('apiPass').value=p;
+  rSettings($('content'));
+  loadSets();
+  sw('races');
+});
+
+</script>
+</body>
+</html>
