@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Newton +EV Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f9fc;--bg2:#fff;--bg3:#f1f4f9;--border:#e2e8f0;--border2:#cbd5e1;
+  --txt:#0f172a;--muted:#64748b;--dim:#94a3b8;
+  --navy:#0f172a;--navyL:#1e293b;
+  --green:#059669;--greenbg:#ecfdf5;--greenbrd:#6ee7b7;
+  --red:#dc2626;--redbg:#fef2f2;--redbrd:#fca5a5;
+  --blue:#2563eb;--bluebg:#eff6ff;--bluebrd:#93c5fd;
+  --gold:#d97706;--goldbg:#fffbeb;--goldbrd:#fcd34d;
+  --purple:#7c3aed;--purplebg:#f5f3ff;--purplebrd:#c4b5fd;
+  --r:8px;--sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;font-size:14px}
+.mono{font-family:'JetBrains Mono',monospace}
+.hdr{background:var(--navy);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.hdr-left{display:flex;align-items:baseline;gap:10px;flex-shrink:0}
+.hdr-left h1{font-size:1.1rem;font-weight:800;color:#fff;letter-spacing:-.3px}
+.htag{background:var(--green);color:#fff;font-family:'JetBrains Mono',monospace;font-size:.58rem;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.5px}
+.hdr-creds{display:flex;gap:6px;flex:1;max-width:400px}
+.hinp{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:.7rem;flex:1;min-width:0;outline:none}
+.hinp::placeholder{color:rgba(255,255,255,.3)}
+.hinp:focus{border-color:var(--green)}
+.hbtn{background:var(--green);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
+.hbtn:hover{background:#047857}
+.hbtn:disabled{opacity:.4;cursor:not-allowed}
+.hstat{font-size:.68rem;color:rgba(255,255,255,.4);font-family:'JetBrains Mono',monospace;white-space:nowrap;flex-shrink:0}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.status{border-radius:var(--r);padding:10px 16px;margin-bottom:14px;font-size:.78rem;font-family:'JetBrains Mono',monospace;display:none}
+.status.info{background:var(--bg2);border:1px solid var(--border);color:var(--muted)}
+.status.ok{background:var(--greenbg);border:1px solid var(--greenbrd);color:var(--green)}
+.status.err{background:var(--redbg);border:1px solid var(--redbrd);color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;box-shadow:var(--sh)}
+.kpi-l{font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;font-family:'JetBrains Mono',monospace}
+.kpi-v{font-size:1.3rem;font-weight:800;font-family:'JetBrains Mono',monospace;line-height:1}
+.kpi-v.g{color:var(--green)}.kpi-v.r{color:var(--red)}.kpi-v.b{color:var(--blue)}.kpi-v.gold{color:var(--gold)}
+.tabs{display:flex;gap:3px;margin-bottom:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:4px;width:fit-content}
+.tab{background:none;border:none;border-radius:5px;padding:7px 16px;font-family:'Syne',sans-serif;font-weight:600;font-size:.78rem;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab.on{background:var(--navy);color:#fff}
+.ev-table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);margin-bottom:12px}
+.ev-table-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border)}
+.ev-table-title{font-weight:700;font-size:.88rem}
+.ev-table-sub{font-size:.72rem;color:var(--muted);font-family:'JetBrains Mono',monospace}
+table{width:100%;border-collapse:collapse;font-size:.76rem}
+th{background:var(--bg3);border-bottom:2px solid var(--border);padding:8px 10px;text-align:left;font-weight:700;color:var(--muted);font-size:.63rem;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;font-family:'JetBrains Mono',monospace}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.tr-strong td{background:rgba(5,150,105,.04);border-left:3px solid var(--green)}
+.tr-good td{background:rgba(37,99,235,.03);border-left:3px solid var(--blue)}
+.horse-n{font-weight:700;font-size:.84rem}
+.horse-s{font-size:.68rem;color:var(--muted);margin-top:1px}
+.ev-pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.ev-strong{background:var(--greenbg);color:var(--green);border:1px solid var(--greenbrd)}
+.ev-good{background:var(--bluebg);color:var(--blue);border:1px solid var(--bluebrd)}
+.ev-mild{background:var(--goldbg);color:var(--gold);border:1px solid var(--goldbrd)}
+.ev-neg{background:var(--redbg);color:var(--red);border:1px solid var(--redbrd)}
+.ev-pass{background:var(--bg3);color:var(--dim);border:1px solid var(--border2)}
+.ew-alert{background:linear-gradient(135deg,var(--purplebg),#fff);border:2px solid var(--purplebrd);border-radius:var(--r);padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.ew-alert-icon{font-size:1.4rem;flex-shrink:0}
+.ew-alert-body h4{font-size:.85rem;font-weight:700;color:var(--purple);margin-bottom:2px}
+.ew-alert-body p{font-size:.76rem;color:var(--muted)}
+.race-group{margin-bottom:16px}
+.race-ghead{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r) var(--r) 0 0;cursor:pointer;gap:10px}
+.race-ghead:hover{background:var(--bg3)}
+.race-ghead-left h3{font-size:.88rem;font-weight:700}
+.race-ghead-left p{font-size:.7rem;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.race-ghead-right{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.race-gbody{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r) var(--r);overflow:hidden}
+.race-gbody.open{display:block}
+.prob-wrap{display:flex;align-items:center;gap:6px}
+.prob-track{width:70px;height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0}
+.prob-fill{height:100%;border-radius:3px;background:var(--blue)}
+.prob-fill.high{background:var(--green)}
+.prob-fill.low{background:var(--red)}
+.tracker-empty{text-align:center;padding:32px;color:var(--muted);font-size:.82rem}
+.tracker-row{display:grid;grid-template-columns:100px 1fr 80px 70px 70px 80px;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:.76rem;align-items:center}
+.tracker-row:last-child{border-bottom:none}
+.tracker-head{background:var(--bg3);font-weight:700;color:var(--muted);font-size:.65rem;text-transform:uppercase;letter-spacing:.5px;font-family:'JetBrains Mono',monospace}
+.result-w{color:var(--green);font-weight:700}
+.result-l{color:var(--red)}
+.result-p{color:var(--gold)}
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty h3{font-size:.95rem;font-weight:700;color:var(--dim);margin-bottom:6px}
+.finp{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--txt);padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:.78rem;outline:none;width:100%}
+.finp:focus{border-color:var(--blue)}
+select.finp{cursor:pointer}
+@media(max-width:700px){
+  .hdr{flex-wrap:wrap;padding:10px 12px;gap:8px}
+  .hdr-creds{max-width:100%;width:100%}
+  .hstat{display:none}
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .wrap{padding:10px}
+  th:nth-child(n+5),td:nth-child(n+5){display:none}
+  .tracker-row{grid-template-columns:80px 1fr 60px 60px}
+  .tracker-row span:nth-child(n+5){display:none}
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="hdr-left"><h1>Newton +EV</h1><span class="htag">SCANNER</span></div>
+  <div class="hdr-creds">
+    <input class="hinp" id="apiUser" type="text" placeholder="username" autocomplete="username"/>
+    <input class="hinp" id="apiPass" type="password" placeholder="password" autocomplete="current-password"/>
+    <button class="hbtn" id="fetchBtn">Scan Now</button>
+  </div>
+  <div class="hstat" id="hstat">Ready</div>
+</div>
+<div class="wrap">
+  <div id="statusBar" class="status"></div>
+  <div class="kpis" id="kpiBar" style="display:none">
+    <div class="kpi"><div class="kpi-l">Races</div><div class="kpi-v" id="kRaces">—</div></div>
+    <div class="kpi"><div class="kpi-l">Runners</div><div class="kpi-v" id="kRunners">—</div></div>
+    <div class="kpi"><div class="kpi-l">+EV Bets</div><div class="kpi-v b" id="kEV">—</div></div>
+    <div class="kpi"><div class="kpi-l">Strong +EV</div><div class="kpi-v g" id="kStrong">—</div></div>
+    <div class="kpi"><div class="kpi-l">Bad EW Races</div><div class="kpi-v gold" id="kBadEW">—</div></div>
+    <div class="kpi"><div class="kpi-l">Tracked Bets</div><div class="kpi-v" id="kTracked">—</div></div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" data-tab="ev">+EV Bets</button>
+    <button class="tab" data-tab="races">All Races</button>
+    <button class="tab" data-tab="ew">Bad EW Races</button>
+    <button class="tab" data-tab="tracker">Tracker</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </div>
+  <div id="tabContent"></div>
+</div>
+<script>
+const ST={races:[],ev:[],badEW:[],tab:'ev',tracker:JSON.parse(localStorage.getItem('ev_tracker')||'[]')};
+const $=id=>document.getElementById(id);
+const sf=(n,d=2)=>isFinite(+n)?(+n).toFixed(d):'—';
+const pc=n=>isFinite(+n)?((+n)*100).toFixed(1)+'%':'—';
+
+function authHeader(){
+  return 'Basic '+btoa($('apiUser').value.trim()+':'+$('apiPass').value.trim());
+}
+
+async function apiCall(path){
+  const apiUrl='https://api.theracingapi.com'+path;
+  const auth=authHeader();
+  const hdrs={'Authorization':auth,'Accept':'application/json'};
+
+  // Direct fetch first (works on GitHub Pages HTTPS)
+  try{
+    const r=await fetch(apiUrl,{headers:hdrs});
+    if(r.status===401||r.status===403) throw new Error('Invalid credentials — check username and password');
+    if(r.ok){const d=await r.json();if(d.detail&&d.detail.toLowerCase().includes('auth'))throw new Error('Invalid credentials');return d;}
+  }catch(e){if(e.message.includes('credentials'))throw e;}
+
+  // corsproxy.io
+  try{
+    const r=await fetch('https://corsproxy.io/?url='+encodeURIComponent(apiUrl),{headers:hdrs});
+    if(r.ok){const d=await r.json();if(d.contents)return JSON.parse(d.contents);if(d.detail&&d.detail.toLowerCase().includes('auth'))throw new Error('Invalid credentials');return d;}
+    if(r.status===401||r.status===403) throw new Error('Invalid credentials');
+  }catch(e){if(e.message.includes('credentials'))throw e;}
+
+  // allorigins
+  try{
+    const r=await fetch('https://api.allorigins.win/get?url='+encodeURIComponent(apiUrl),{headers:hdrs});
+    if(r.ok){const d=await r.json();if(d.contents){const p2=JSON.parse(d.contents);if(p2.detail&&p2.detail.toLowerCase().includes('auth'))throw new Error('Invalid credentials');return p2;}}
+  }catch(e){if(e.message.includes('credentials'))throw e;}
+
+  // codetabs
+  try{
+    const r=await fetch('https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(apiUrl),{headers:hdrs});
+    if(r.ok){const t=await r.text();return JSON.parse(t);}
+  }catch(e){}
+
+  throw new Error('Cannot connect — upload to GitHub Pages for best results');
+}
+
+async function fetchRacecards(){
+  const u=$('apiUser').value.trim(),p=$('apiPass').value.trim();
+  if(!u||!p){stat('Enter username and password','err');return;}
+  const btn=$('fetchBtn');
+  btn.disabled=true;btn.textContent='Scanning…';
+  setHstat('Scanning…');stat('Fetching racecards…','info');
+  try{
+    const region=$('setRegion')?$('setRegion').value:'gb,ire';
+    const data=await apiCall('/v1/racecards/standard?region_codes='+region);
+    if(Array.isArray(data)) ST.races=data;
+    else if(Array.isArray(data.racecards)) ST.races=data.racecards;
+    else{const arr=Object.values(data).find(v=>Array.isArray(v));ST.races=arr||[];}
+    if(!ST.races.length) throw new Error('No races returned — check credentials');
+    stat('Analysing '+ST.races.length+' races…','info');
+    analyse();
+    localStorage.setItem('ev_user',u);localStorage.setItem('ev_pass',p);
+    setHstat(ST.races.length+' races · '+ST.ev.length+' +EV bets');
+    stat('Done — '+ST.ev.length+' value bets found','ok');
+    updateKPIs();renderTab();
+  }catch(e){
+    stat('Error: '+e.message,'err');setHstat('Error');
+  }finally{
+    btn.disabled=false;btn.textContent='Scan Now';
+  }
+}
+
+function analyse(){
+  ST.ev=[];ST.badEW=[];
+  const minEV=parseFloat($('setMinEV')?$('setMinEV').value:3)/100;
+  for(const race of ST.races){
+    const runners=race.runners||[];
+    if(!runners.length) continue;
+    const rp=runners.map(runner=>{
+      const odds=(runner.odds||[]).map(o=>parseFloat(o.decimal||0)).filter(v=>v>1);
+      if(!odds.length) return{runner,avgImplied:null};
+      const avgImplied=odds.reduce((s,o)=>s+1/o,0)/odds.length;
+      const bestOdds=Math.max(...odds),worstOdds=Math.min(...odds);
+      const bookmakers=(runner.odds||[]).filter(o=>parseFloat(o.decimal||0)>1).map(o=>({name:o.bookmaker,odds:parseFloat(o.decimal),ew_places:o.ew_places,ew_denom:o.ew_denom})).sort((a,b)=>b.odds-a.odds);
+      return{runner,avgImplied,bestOdds,worstOdds,bookmakers,bestBookmaker:bookmakers[0]?.name||'—'};
+    });
+    const valid=rp.filter(r=>r.avgImplied!=null);
+    if(!valid.length) continue;
+    const total=valid.reduce((s,r)=>s+r.avgImplied,0);
+    valid.forEach(r=>{
+      r.trueProb=r.avgImplied/total;r.fairOdds=1/r.trueProb;
+      r.bestEV=r.bestOdds?(r.trueProb*r.bestOdds)-1:null;
+      r.evPct=r.bestEV!==null?r.bestEV*100:null;
+      r.overround=total;
+      r.spread=r.bestOdds&&r.worstOdds?(r.bestOdds-r.worstOdds)/r.worstOdds*100:null;
+    });
+    const minO=parseFloat($('setMinOdds')?$('setMinOdds').value:2);
+    const maxO=parseFloat($('setMaxOdds')?$('setMaxOdds').value:20);
+    for(const r of valid){
+      if(r.bestEV===null||r.bestEV<minEV) continue;
+      if(r.bestOdds<minO||r.bestOdds>maxO) continue;
+      ST.ev.push({...r,horse:r.runner.horse,trainer:r.runner.trainer||'',jockey:r.runner.jockey||'',
+        form:r.runner.form||'',draw:r.runner.draw,or:r.runner.ofr,rpr:r.runner.rpr,age:r.runner.age,
+        lastRun:r.runner.last_run,spotlight:(r.runner.spotlight||r.runner.comment||'').slice(0,180),
+        raceId:race.race_id,course:race.course,offTime:race.off_time,raceName:race.race_name,
+        dist:race.distance,going:race.going,raceClass:race.race_class,fieldSize:race.field_size,
+        ewPlaces:r.bookmakers?.[0]?.ew_places,ewDenom:r.bookmakers?.[0]?.ew_denom});
+    }
+    const shortFavs=valid.filter(r=>r.worstOdds&&r.worstOdds<3.0);
+    if(shortFavs.length>=2&&runners.length>=6){
+      const ewOpps=valid.filter(r=>r.bestOdds&&r.bestOdds>=5&&r.trueProb).sort((a,b)=>(b.bestEV||0)-(a.bestEV||0)).slice(0,3);
+      if(ewOpps.length) ST.badEW.push({race,shortFavs:shortFavs.map(r=>({horse:r.runner.horse,odds:r.worstOdds})),
+        ewOpps:ewOpps.map(r=>({horse:r.runner.horse,bestOdds:r.bestOdds,trueProb:r.trueProb,fairOdds:r.fairOdds,evPct:r.evPct,bestBookmaker:r.bestBookmaker,ewPlaces:r.bookmakers?.[0]?.ew_places,ewDenom:r.bookmakers?.[0]?.ew_denom})),
+        fieldSize:runners.length,course:race.course,offTime:race.off_time,raceName:race.race_name,going:race.going,dist:race.distance});
+    }
+  }
+  ST.ev.sort((a,b)=>(b.evPct||0)-(a.evPct||0));
+}
+
+function sw(tab){
+  ST.tab=tab;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  renderTab();
+}
+function renderTab(){
+  const c=$('tabContent');
+  if(!ST.races.length&&ST.tab!=='tracker'&&ST.tab!=='settings'){
+    c.innerHTML='<div class="empty"><h3>No data loaded</h3><p>Enter API credentials and hit <b>Scan Now</b></p></div>';return;
+  }
+  if(ST.tab==='ev') renderEV(c);
+  else if(ST.tab==='races') renderRaces(c);
+  else if(ST.tab==='ew') renderBadEW(c);
+  else if(ST.tab==='tracker') renderTracker(c);
+  else if(ST.tab==='settings') renderSettings(c);
+}
+function evPill(evPct){
+  if(evPct>=15) return`<span class="ev-pill ev-strong">+${sf(evPct,1)}% STRONG</span>`;
+  if(evPct>=8)  return`<span class="ev-pill ev-good">+${sf(evPct,1)}% GOOD</span>`;
+  if(evPct>=3)  return`<span class="ev-pill ev-mild">+${sf(evPct,1)}% MILD</span>`;
+  if(evPct>=0)  return`<span class="ev-pill ev-pass">+${sf(evPct,1)}%</span>`;
+  return`<span class="ev-pill ev-neg">${sf(evPct,1)}%</span>`;
+}
+function renderEV(c){
+  if(!ST.ev.length){c.innerHTML='<div class="empty"><h3>No +EV bets found</h3><p>Try lowering Min EV % in Settings, or scan closer to race time</p></div>';return;}
+  let html=`<div class="ev-table-wrap"><div class="ev-table-head"><div><div class="ev-table-title">+EV Opportunities</div><div class="ev-table-sub">Ranked by expected value — bet where bookmaker price exceeds true market price</div></div></div>
+    <table><thead><tr><th>Horse</th><th>Time·Course</th><th>Best Odds</th><th>True Prob</th><th>Fair Odds</th><th>EV</th><th>Best Book</th><th>Overround</th><th>Track</th></tr></thead><tbody>`;
+  for(const ev of ST.ev){
+    const rc=(ev.evPct||0)>=15?'tr-strong':(ev.evPct||0)>=8?'tr-good':'';
+    html+=`<tr class="${rc}"><td><div class="horse-n">${ev.horse}</div><div class="horse-s">${ev.trainer}·${ev.jockey}·Form:${ev.form||'—'}</div><div class="horse-s">OR:${ev.or||'—'} RPR:${ev.rpr||'—'} Draw:${ev.draw||'—'}</div></td>
+      <td class="mono" style="font-size:.72rem">${ev.offTime}<br>${ev.course}<br><span style="color:var(--dim)">${ev.dist}·${ev.going}</span></td>
+      <td class="mono" style="font-weight:700;color:var(--green)">${sf(ev.bestOdds,2)}</td>
+      <td><div class="prob-wrap"><div class="prob-track"><div class="prob-fill ${ev.trueProb>0.4?'high':ev.trueProb<0.1?'low':''}" style="width:${Math.min(100,ev.trueProb*100)}%"></div></div><span class="mono" style="font-size:.7rem">${pc(ev.trueProb)}</span></div></td>
+      <td class="mono">${sf(ev.fairOdds,2)}</td><td>${evPill(ev.evPct)}</td>
+      <td style="font-size:.72rem;font-weight:700;color:var(--blue)">${ev.bestBookmaker}</td>
+      <td class="mono" style="font-size:.7rem;color:var(--muted)">${sf((ev.overround-1)*100,1)}%</td>
+      <td><button onclick='addToTracker(${JSON.stringify({horse:ev.horse,course:ev.course,offTime:ev.offTime,bestOdds:ev.bestOdds,evPct:ev.evPct,bestBookmaker:ev.bestBookmaker}).replace(/'/g,"\\'")})'
+        style="background:var(--navy);color:#fff;border:none;border-radius:4px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer">Track</button></td>
+    </tr>`;
+  }
+  html+=`</tbody></table></div>`;c.innerHTML=html;
+}
+function renderRaces(c){
+  const evByRace=new Map();
+  for(const ev of ST.ev){if(!evByRace.has(ev.raceId))evByRace.set(ev.raceId,[]);evByRace.get(ev.raceId).push(ev);}
+  let html='';
+  for(const race of ST.races){
+    const runners=race.runners||[];if(!runners.length) continue;
+    const raceEV=evByRace.get(race.race_id)||[];const topEV=raceEV[0];
+    const rp=getRunnerProbs(race);
+    html+=`<div class="race-group"><div class="race-ghead" onclick="tog('rg${race.race_id}')">
+      <div class="race-ghead-left"><h3>${race.off_time}·${race.course}·${race.race_name||''}</h3><p>${race.distance||''}·${race.going||''}·${race.race_class||''}·${race.field_size||''} runners</p></div>
+      <div class="race-ghead-right">${topEV?`<span class="ev-pill ev-good">+EV: ${topEV.horse}</span>`:'<span class="ev-pill ev-pass">No +EV</span>'}<span style="color:var(--dim)">▾</span></div>
+    </div><div class="race-gbody" id="rg${race.race_id}">
+      <table><thead><tr><th>Horse</th><th>Best Odds</th><th>True Prob</th><th>Fair Odds</th><th>EV%</th><th>Best Book</th></tr></thead><tbody>
+      ${rp.map(r=>{const evRow=raceEV.find(e=>e.horse===r.runner.horse);const rc=evRow&&(evRow.evPct||0)>=8?'tr-strong':evRow?'tr-good':'';
+        return`<tr class="${rc}"><td><div class="horse-n">${r.runner.horse}</div><div class="horse-s">${r.runner.trainer||''}·${r.runner.jockey||''}</div></td>
+        <td class="mono">${r.bestOdds?sf(r.bestOdds,2):'—'}</td><td class="mono">${r.trueProb?pc(r.trueProb):'—'}</td>
+        <td class="mono">${r.fairOdds?sf(r.fairOdds,2):'—'}</td>
+        <td>${evRow?evPill(evRow.evPct):'<span class="ev-pill ev-pass">—</span>'}</td>
+        <td style="font-size:.72rem;font-weight:700;color:var(--blue)">${r.bestBookmaker||'—'}</td></tr>`;}).join('')}
+      </tbody></table></div></div>`;
+  }
+  c.innerHTML=html||'<div class="empty"><h3>No races</h3></div>';
+}
+function getRunnerProbs(race){
+  const runners=race.runners||[];
+  const rp=runners.map(runner=>{
+    const odds=(runner.odds||[]).map(o=>parseFloat(o.decimal||0)).filter(v=>v>1);
+    if(!odds.length) return{runner,trueProb:null,bestOdds:null,bookmakers:[],bestBookmaker:'—'};
+    const bestOdds=Math.max(...odds);
+    const avgImpl=odds.reduce((s,o)=>s+1/o,0)/odds.length;
+    const bookmakers=(runner.odds||[]).filter(o=>parseFloat(o.decimal||0)>1).map(o=>({name:o.bookmaker,odds:parseFloat(o.decimal)})).sort((a,b)=>b.odds-a.odds);
+    return{runner,avgImpl,bestOdds,bookmakers,bestBookmaker:bookmakers[0]?.name||'—'};
+  }).filter(r=>r.avgImpl!=null);
+  const total=rp.reduce((s,r)=>s+r.avgImpl,0);
+  rp.forEach(r=>{r.trueProb=r.avgImpl/total;r.fairOdds=1/r.trueProb;});
+  return rp.sort((a,b)=>(b.trueProb||0)-(a.trueProb||0));
+}
+function renderBadEW(c){
+  if(!ST.badEW.length){c.innerHTML='<div class="empty"><h3>No bad EW races found</h3><p>2+ short-priced favourites creates EW value on bigger prices.</p></div>';return;}
+  let html=`<div class="ew-alert"><div class="ew-alert-icon">⚠️</div><div class="ew-alert-body"><h4>Bad Each-Way Race Alert</h4><p>Multiple short-priced favourites distort the place market — back bigger-priced horses each-way for +EV.</p></div></div>`;
+  for(const bew of ST.badEW){
+    html+=`<div class="ev-table-wrap" style="margin-bottom:12px"><div class="ev-table-head"><div>
+      <div class="ev-table-title">🚨 ${bew.offTime}·${bew.course}·${bew.raceName||''}</div>
+      <div class="ev-table-sub">${bew.dist}·${bew.going}·${bew.fieldSize} runners · Short favs: ${bew.shortFavs.map(f=>f.horse+' ('+sf(f.odds,2)+')').join(', ')}</div>
+    </div></div><table><thead><tr><th>Horse (EW opp)</th><th>Best Odds</th><th>True Prob</th><th>Fair Odds</th><th>EV%</th><th>EW Terms</th><th>Best Book</th></tr></thead><tbody>
+    ${bew.ewOpps.map(o=>`<tr class="tr-good"><td><div class="horse-n">${o.horse}</div><div class="horse-s">Back each-way</div></td>
+      <td class="mono" style="font-weight:700;color:var(--purple)">${sf(o.bestOdds,2)}</td><td class="mono">${pc(o.trueProb)}</td>
+      <td class="mono">${sf(o.fairOdds,2)}</td><td>${evPill(o.evPct)}</td>
+      <td class="mono">${o.ewPlaces?o.ewPlaces+' places 1/'+o.ewDenom:'—'}</td>
+      <td style="font-size:.72rem;font-weight:700;color:var(--blue)">${o.bestBookmaker}</td></tr>`).join('')}
+    </tbody></table></div>`;
+  }
+  c.innerHTML=html;
+}
+function addToTracker(evStr){
+  const ev=typeof evStr==='string'?JSON.parse(evStr):evStr;
+  ST.tracker.push({id:Date.now(),date:new Date().toISOString().slice(0,10),horse:ev.horse,course:ev.course,offTime:ev.offTime,odds:ev.bestOdds,evPct:ev.evPct,bookmaker:ev.bestBookmaker,stake:parseFloat($('setStake')?$('setStake').value:1),result:null,returns:null});
+  localStorage.setItem('ev_tracker',JSON.stringify(ST.tracker));
+  updateKPIs();stat('Added '+ev.horse+' to tracker','ok');
+  if(ST.tab==='tracker') renderTab();
+}
+function setResult(id,result){
+  const b=ST.tracker.find(b=>b.id===id);if(!b) return;
+  b.result=result;b.returns=result==='W'?b.stake*b.odds:result==='L'?0:b.stake*(b.odds/4);
+  localStorage.setItem('ev_tracker',JSON.stringify(ST.tracker));renderTab();updateKPIs();
+}
+function clearTracker(){
+  if(confirm('Clear all tracked bets?')){ST.tracker=[];localStorage.setItem('ev_tracker',JSON.stringify(ST.tracker));renderTab();updateKPIs();}
+}
+function renderTracker(c){
+  if(!ST.tracker.length){c.innerHTML='<div class="tracker-empty">No bets tracked yet. Click <b>Track</b> on any +EV bet.<br><br>Tracks real P/L and A/E to validate the edge over time.</div>';return;}
+  const settled=ST.tracker.filter(b=>b.result!==null);
+  const stake=settled.reduce((s,b)=>s+b.stake,0);
+  const ret=settled.reduce((s,b)=>s+(b.returns||0),0);
+  const pl=ret-stake,roi=stake>0?pl/stake*100:0;
+  const wins=settled.filter(b=>b.result==='W').length;
+  const expWins=settled.reduce((s,b)=>s+1/b.odds,0);
+  const ae=expWins>0?wins/expWins:0;
+  let html=`<div class="kpis" style="margin-bottom:14px">
+    <div class="kpi"><div class="kpi-l">Bets</div><div class="kpi-v">${ST.tracker.length}</div></div>
+    <div class="kpi"><div class="kpi-l">Settled</div><div class="kpi-v">${settled.length}</div></div>
+    <div class="kpi"><div class="kpi-l">P/L</div><div class="kpi-v ${pl>=0?'g':'r'}">${pl>=0?'+':''}£${sf(pl,2)}</div></div>
+    <div class="kpi"><div class="kpi-l">ROI</div><div class="kpi-v ${roi>=0?'g':'r'}">${sf(roi,1)}%</div></div>
+    <div class="kpi"><div class="kpi-l">A/E</div><div class="kpi-v ${ae>=1?'g':'r'}">${sf(ae,2)}</div></div>
+    <div class="kpi"><div class="kpi-l">Strike Rate</div><div class="kpi-v">${settled.length?sf(wins/settled.length*100,1)+'%':'—'}</div></div>
+  </div>
+  <div class="ev-table-wrap"><div class="ev-table-head" style="justify-content:space-between">
+    <div class="ev-table-title">Bet Tracker</div>
+    <button onclick="clearTracker()" style="background:var(--redbg);color:var(--red);border:1px solid var(--redbrd);border-radius:4px;padding:4px 10px;font-size:.7rem;font-weight:700;cursor:pointer">Clear All</button>
+  </div>
+  <div class="tracker-row tracker-head"><span>Date</span><span>Horse·Course</span><span>Odds</span><span>EV%</span><span>Stake</span><span>Result</span></div>`;
+  for(const b of [...ST.tracker].reverse()){
+    const rh=b.result?`<span class="result-${b.result.toLowerCase()}">${b.result==='W'?'✅ WIN':b.result==='L'?'❌ LOSS':'🟡 PLACE'} £${sf(b.returns,2)}</span>`:
+      `<span style="display:flex;gap:4px">
+        <button onclick="setResult(${b.id},'W')" style="background:var(--greenbg);color:var(--green);border:1px solid var(--greenbrd);border-radius:3px;padding:2px 6px;font-size:.65rem;font-weight:700;cursor:pointer">W</button>
+        <button onclick="setResult(${b.id},'P')" style="background:var(--goldbg);color:var(--gold);border:1px solid var(--goldbrd);border-radius:3px;padding:2px 6px;font-size:.65rem;font-weight:700;cursor:pointer">P</button>
+        <button onclick="setResult(${b.id},'L')" style="background:var(--redbg);color:var(--red);border:1px solid var(--redbrd);border-radius:3px;padding:2px 6px;font-size:.65rem;font-weight:700;cursor:pointer">L</button>
+      </span>`;
+    html+=`<div class="tracker-row"><span class="mono" style="font-size:.7rem">${b.date}</span>
+      <span><b>${b.horse}</b><br><span style="font-size:.68rem;color:var(--muted)">${b.offTime} ${b.course}·${b.bookmaker}</span></span>
+      <span class="mono">${sf(b.odds,2)}</span><span class="mono" style="color:var(--green)">+${sf(b.evPct,1)}%</span>
+      <span class="mono">£${sf(b.stake,2)}</span><span>${rh}</span></div>`;
+  }
+  html+=`</div>`;c.innerHTML=html;
+}
+function renderSettings(c){
+  c.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px">
+      <h3 style="font-size:.85rem;font-weight:700;margin-bottom:12px">Scanner Settings</h3>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">Region</label>
+        <select class="finp" id="setRegion"><option value="gb,ire">GB + IRE</option><option value="gb">GB Only</option><option value="ire">IRE Only</option></select></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">Min EV %</label>
+        <input class="finp" id="setMinEV" type="number" value="3" min="0" max="30" step="0.5"/></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">Min Odds</label>
+        <input class="finp" id="setMinOdds" type="number" value="2.0" min="1.5" max="10" step="0.5"/></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">Max Odds</label>
+        <input class="finp" id="setMaxOdds" type="number" value="20" min="4" max="50"/></div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"><label style="font-size:.65rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-family:'JetBrains Mono',monospace">Default Stake £</label>
+        <input class="finp" id="setStake" type="number" value="1" min="0.5" step="0.5"/></div>
+      <button onclick="saveSettings();stat('Settings saved','ok')" style="background:var(--navy);color:#fff;border:none;border-radius:5px;padding:8px 14px;font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer">Save Settings</button>
+    </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px">
+      <h3 style="font-size:.85rem;font-weight:700;margin-bottom:12px">How +EV Works</h3>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.9">
+        <b>Step 1 — True probability</b><br>Takes all 32 bookmaker prices, converts to implied probs, averages, removes overround.<br><br>
+        <b>Step 2 — Fair odds</b><br>Fair odds = 1 ÷ true probability. 25% chance = 4.00 fair odds.<br><br>
+        <b>Step 3 — Expected Value</b><br>EV% = (true prob × best odds − 1) × 100. Positive = value bet.<br><br>
+        <b>Step 4 — Bad EW races</b><br>2+ horses below 3.0 = distorted place market. EW value on bigger prices.<br><br>
+        <b>Scan before 10am</b> — most mispricing happens in the morning before markets tighten.<br><br>
+        <b>Track everything.</b> After 200+ bets, A/E above 1.0 confirms real edge.
+      </div>
+    </div>
+  </div>`;
+  loadSettings();
+}
+function saveSettings(){
+  const s={};['setRegion','setMinEV','setMinOdds','setMaxOdds','setStake'].forEach(k=>{if($(k))s[k]=$(k).value;});
+  localStorage.setItem('ev_settings',JSON.stringify(s));
+}
+function loadSettings(){
+  const s=JSON.parse(localStorage.getItem('ev_settings')||'{}');
+  Object.entries(s).forEach(([k,v])=>{if($(k))$(k).value=v;});
+}
+function updateKPIs(){
+  $('kpiBar').style.display='grid';
+  $('kRaces').textContent=ST.races.length;
+  $('kRunners').textContent=ST.races.reduce((s,r)=>s+(r.runners||[]).length,0);
+  $('kEV').textContent=ST.ev.length;
+  $('kStrong').textContent=ST.ev.filter(e=>(e.evPct||0)>=8).length;
+  $('kBadEW').textContent=ST.badEW.length;
+  $('kTracked').textContent=ST.tracker.length;
+}
+function tog(id){const b=$(id);if(b)b.classList.toggle('open');}
+function stat(msg,type='info'){const s=$('statusBar');s.style.display='block';s.textContent=msg;s.className='status '+type;if(type==='ok')setTimeout(()=>{s.style.display='none';},4000);}
+function setHstat(txt){$('hstat').textContent=txt;}
+
+window.addEventListener('load',()=>{
+  const u=localStorage.getItem('ev_user'),p=localStorage.getItem('ev_pass');
+  if(u)$('apiUser').value=u;if(p)$('apiPass').value=p;
+  document.querySelectorAll('.tab').forEach(tab=>{tab.onclick=()=>sw(tab.dataset.tab);});
+  $('fetchBtn').onclick=fetchRacecards;
+  sw('ev');updateKPIs();
+});
+</script>
+</body>
+</html>
